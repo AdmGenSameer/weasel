@@ -1,0 +1,45 @@
+name: E2E
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: olapay
+          POSTGRES_PASSWORD: olapay_dev
+          POSTGRES_DB: olapay
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U olapay -d olapay"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://olapay:olapay_dev@localhost:5432/olapay?schema=public
+      REDIS_URL: redis://localhost:6379
+      WEB_ORIGIN: http://127.0.0.1:3000
+      JWT_ACCESS_SECRET: ci-only-access-secret-change-before-use
+      DEMO_USER_PHONE: "9000000001"
+      DEMO_USER_PASSWORD: "DemoPass!234"
+      NODE_ENV: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run db:generate
+      - run: npm run db:deploy
+      - run: npm run db:seed
+      - run: npm run build
+      - run: npm run test:e2e

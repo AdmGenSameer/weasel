@@ -1,0 +1,9 @@
+node_modules
+apps/web/.next
+apps/api/dist
+apps/api/src/generated
+coverage
+playwright-report
+test-results
+work
+package-lock.json
