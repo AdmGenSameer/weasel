@@ -14,6 +14,10 @@ async function bootstrap() {
     throw new Error("JWT_ACCESS_SECRET must be configured in production");
   }
   const app = await NestFactory.create(AppModule);
+  if (process.env.RENDER === "true") {
+    // Trust Render's single reverse proxy, without trusting arbitrary forwarded headers.
+    app.getHttpAdapter().getInstance().set("trust proxy", 1);
+  }
   app.setGlobalPrefix("api/v1");
   app.use(helmet());
   app.use(cookieParser());
